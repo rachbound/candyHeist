@@ -36,12 +36,12 @@ pggg
  p
 `, // e
 `
- g    
-gccc
+ p    
+pccc
  cccc
  cccc
-  cccg
-    g
+  cccp
+    p
 `, // f
 `
     y 
@@ -73,7 +73,9 @@ const G = {
 	ENEMY_FIRE_RATE: 100,
 
     EBULLET_SPEED: 0.5,
-    EBULLET_ROTATION_SPD: 0.1
+    EBULLET_ROTATION_SPD: 0.1,
+
+    NUM_CANDY: 75
 };
 
 options = {
@@ -109,8 +111,6 @@ let stars;
 let player;
 
 let candy;
-let nextcandyDist;
-let currentCandySpeed;
 
 /**
  * @type { Enemy [] }
@@ -149,10 +149,28 @@ let waveCount;
  */
 let eBullets;
 
+let ids = ["d", "e", "f", "g"];
+
 // The game loop function
 function update() {
     // The init function running at startup
 	if (!ticks) {
+
+        candy = [];
+
+        let xPos = 1;
+		candy = times(G.NUM_CANDY, () => {
+			xPos += 15;
+			const posX = xPos;
+            const posY = rnd(1, 50);
+			const rand = Math.floor(Math.random() * 4)
+			return {
+				pos: vec(posX, posY),
+				speed: rnd(G.ENEMY_MIN_BASE_SPEED + 20, G.ENEMY_MAX_BASE_SPEED),
+				id: ids[rand]
+			};
+		});
+
         // A CrispGameLib function
         // First argument (number): number of times to run the second argument
         // Second argument (function): a function that returns an object. This
@@ -184,16 +202,37 @@ function update() {
         waveCount = 0;
 	}
 
+    color("black");
+    candy.forEach((f) => {
+		
+		f.pos.y += 0.25;
+		char(f.id, f.pos);
+        if (f.pos.y > G.HEIGHT) f.pos.y = 0;
+	});
+
+    if(candy.length < G.NUM_CANDY) {
+        for(let i = candy.length; i < G.NUM_CANDY; i++) {
+            const posX = rnd(5, G.WIDTH);
+            const posY = rnd(-200, -5);
+            const rand = Math.floor(Math.random() * 4);
+            candy.push({
+                pos: vec(posX, posY),
+                speed: rnd(G.ENEMY_MIN_BASE_SPEED, G.ENEMY_MAX_BASE_SPEED),
+                id: ids[rand]
+            });
+        }
+    }
+
     // Spawning enemies
     if (enemies.length === 0) {
         currentEnemySpeed =
             rnd(G.ENEMY_MIN_BASE_SPEED, G.ENEMY_MAX_BASE_SPEED) * difficulty;
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < rnd(3, 7); i++) {
             const posX = rnd(0, G.WIDTH);
             const posY = -rnd(i * G.HEIGHT * 0.1);
             enemies.push({
                 pos: vec(posX, posY),
-                firingCooldown: G.ENEMY_FIRE_RATE 
+                firingCooldown: G.ENEMY_FIRE_RATE - waveCount
             });
         }
 
@@ -231,7 +270,24 @@ function update() {
     color ("black");
     char("a", player.pos);
 
-    // text(fBullets.length.toString(), 3, 10);
+    remove(candy, (f) => {
+		let isCollidingGHOST
+		isCollidingGHOST = char(f.id, f.pos).isColliding.char.a;
+
+		//small particle explosion
+		if (isCollidingGHOST) {
+			
+			color("cyan");
+			particle(f.pos);
+			color("black");
+
+			play("coin");
+            addScore(10, f.pos);
+
+		}
+
+		return (isCollidingGHOST || f.pos.x > G.WIDTH );
+	});
 
     remove(enemies, (e) => {
         e.pos.y += currentEnemySpeed;
@@ -277,10 +333,6 @@ function update() {
             end();
             play("powerUp");
         }
-
-        const isCollidingWithFBullets
-            = char("c", eb.pos, {rotation: eb.rotation}).isColliding.rect.yellow;
-        if (isCollidingWithFBullets) addScore(1, eb.pos);
         
         // If eBullet is not onscreen, remove it
         return (!eb.pos.isInRect(0, 0, G.WIDTH, G.HEIGHT));

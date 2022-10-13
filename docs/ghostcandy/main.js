@@ -1,9 +1,9 @@
-title = "Candy Heist";
+title = "CANDY HEIST";
 
 description = `
-Use your cursor 
+COLLECT CANDY!
 
-to collect candy!
+AVOID ENEMIES!
 `;
 
 characters = [
@@ -81,7 +81,7 @@ const G = {
 options = {
 	viewSize: {x: G.WIDTH, y: G.HEIGHT},
 	theme: "crt",
-	seed: 980,
+	seed: 703495,
 	isPlayingBgm: true
 };
 
